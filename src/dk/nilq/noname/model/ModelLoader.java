@@ -1,6 +1,7 @@
 package dk.nilq.noname.model;
 
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,13 +16,14 @@ public class ModelLoader {
 	private List<Integer> vaoList = new ArrayList<Integer>();
 	private List<Integer> vboList = new ArrayList<Integer>();
 	
-	public RawModel loadToVAO(float[] positions) {
+	public RawModel loadToVAO(float[] positions, int[] indices) {
 		int vaoID = createVAO();
 		
+		bindIndicesBuffer(indices);
 		storeAttributeList(0, positions);
 		unbindVAO();
 		
-		return new RawModel(vaoID, positions.length / 3);
+		return new RawModel(vaoID, indices.length);
 	}
 	
 	private int createVAO() {
@@ -57,11 +59,32 @@ public class ModelLoader {
 		return buffer;
 	}
 	
+	private IntBuffer storeIntBuffer(int[] data) {
+		IntBuffer buffer = BufferUtils.createIntBuffer(data.length);
+		
+		buffer.put(data);
+		buffer.flip();
+		
+		return buffer;
+	}
+	
 	private void unbindVAO() {
 		GL30.glBindVertexArray(0);
 	}
 	
-	public void cleanLists() {
+	private void bindIndicesBuffer(int[] indices) {
+		int vboID = GL15.glGenBuffers();
+		
+		vboList.add(vboID);
+		
+		GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, vboID);
+		
+		IntBuffer buffer = storeIntBuffer(indices);
+		
+		GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
+	}
+	
+	public void clean() {
 		for(int vao : vaoList) {
 			GL30.glDeleteVertexArrays(vao);
 		}
